@@ -22,6 +22,7 @@ type ListSecretsPag interface {
 func getSecrets(ctx context.Context, secretsPaginator ListSecretsPag) []string {
 
 	flaggedSecrets := []string{}
+	// two year old secrets, adjust depending on usecases
 	twoYearsAgo := time.Now().AddDate(-2, 0, 0)
 
 	for secretsPaginator.HasMorePages() {
@@ -40,6 +41,8 @@ func getSecrets(ctx context.Context, secretsPaginator ListSecretsPag) []string {
 				}
 			} else {
 				// if it is not accessed at all append to slice
+				// becareful with secrets that have been accessed, could have been newly created
+				// TODO add check for creation date
 				log.Infof("%v has not been accessed at all", *secret.Name)
 				flaggedSecrets = append(flaggedSecrets, *secret.ARN)
 			}
