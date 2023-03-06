@@ -18,6 +18,7 @@ type ListSecretsPag interface {
 	NextPage(ctx context.Context, optFns ...func(*secretsmanager.Options)) (*secretsmanager.ListSecretsOutput, error)
 }
 
+// loop through all secrets using the paginator
 func getSecrets(ctx context.Context, secretsPaginator ListSecretsPag) []string {
 
 	flaggedSecrets := []string{}
@@ -38,7 +39,8 @@ func getSecrets(ctx context.Context, secretsPaginator ListSecretsPag) []string {
 					flaggedSecrets = append(flaggedSecrets, *secret.ARN)
 				}
 			} else {
-				log.Infof("is %v gucci gang to delete ?", *secret.Name)
+				// if it is not accessed at all append to slice
+				log.Infof("%v has not been accessed at all", *secret.Name)
 				flaggedSecrets = append(flaggedSecrets, *secret.ARN)
 			}
 		}
@@ -46,6 +48,7 @@ func getSecrets(ctx context.Context, secretsPaginator ListSecretsPag) []string {
 	return flaggedSecrets
 }
 
+// all secrets from the flagged secrets slice will be deleted
 func deleteSecrets(ctx context.Context, svc *secretsmanager.Client, secrets []string) {
 
 	for _, secret := range secrets {
