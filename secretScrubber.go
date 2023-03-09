@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"encoding/csv"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -64,7 +66,7 @@ func deleteSecrets(ctx context.Context, svc *secretsmanager.Client, secrets []st
 }
 
 // need to insert channel and slack token
-func sendNoti(numberOfSecrets int) {
+func sendNoti(numberOfSecrets int) bool {
 
 	api := slack.New("")
 	message := fmt.Sprintf("Deleted %v secrets in secrets manager \n", numberOfSecrets)
@@ -73,13 +75,44 @@ func sendNoti(numberOfSecrets int) {
 		Text:    message,
 		Color:   "4af030",
 	}
-	channelId := ""
-	_, timestamp, err := api.PostMessage(channelId, slack.MsgOptionAttachments(slackMsg))
+	channelID := ""
+	_, timestamp, err := api.PostMessage(channelID, slack.MsgOptionAttachments(slackMsg))
 
 	if err != nil {
 		panic(err)
 	}
 	log.Infof("Message sent succesfully at %s \n", timestamp)
+
+	uploadParam := slack.FileUploadParameters{
+		File:     "/tmp/flagged.csv",
+		Title:    "DeletedSecrets",
+		Channels: []string{channelID},
+		Filetype: "csv",
+	}
+
+	sendIt, err := api.UploadFile(uploadParam)
+	if err != nil {
+		log.Errorln(err)
+		return false
+	}
+	log.Infoln(sendIt)
+	return true
+}
+
+func createSecretsFile(secretList []string) string {
+
+	csvFile, err := os.Create("/tmp/flagged.csv")
+
+	if err != nil {
+		log.Errorln(err)
+		return "file not created"
+	}
+
+	csvwriter := csv.NewWriter(csvFile)
+	defer csvwriter.Flush()
+	csvwriter.Write(secretList)
+
+	return "file created succesfully"
 }
 
 func main() {
