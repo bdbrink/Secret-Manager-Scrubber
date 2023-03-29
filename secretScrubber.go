@@ -59,7 +59,8 @@ func deleteSecrets(ctx context.Context, svc *secretsmanager.Client, secrets []st
 	for _, secret := range secrets {
 		log.Infoln(secret)
 		deleteParams := &secretsmanager.DeleteSecretInput{
-			SecretId: aws.String(secret),
+			SecretId:             aws.String(secret),
+			RecoveryWindowInDays: aws.Int64(7),
 		}
 		log.Info(svc.DeleteSecret(context.TODO(), deleteParams))
 	}
